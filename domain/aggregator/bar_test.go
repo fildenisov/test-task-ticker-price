@@ -111,14 +111,18 @@ func TestBarsUpdater(t *testing.T) {
 		for i := 0; i < 1000; i++ {
 			time.Sleep(time.Millisecond * time.Duration(rand.Int63n(10)))
 			priceFloat := float64(rand.Int31n(10000)) / 10.0
+			t := time.Now()
+			if rand.Int31n(2) == 1 {
+				t = t.Add(-1 * time.Second)
+			}
 			p <- models.TickerPrice{
 				Ticker: models.BTCUSDTicker,
-				Time:   time.Now(),
+				Time:   t,
 				Price:  fmt.Sprint(priceFloat),
 			}
 		}
 		close(p)
-		t.Log("channel closed")
+		// t.Log("channel closed")
 		wg.Done()
 	}
 
@@ -128,7 +132,7 @@ func TestBarsUpdater(t *testing.T) {
 	wg.Wait()
 	time.Sleep(3 * time.Second)
 	bs.stopFiller()
-	t.Logf("pos: %v", bs.pos)
-	t.Logf("count: %v", bs.count)
-	t.Log(bs.values)
+	// t.Logf("pos: %v", bs.pos)
+	// t.Logf("count: %v", bs.count)
+	// t.Log(bs.values)
 }

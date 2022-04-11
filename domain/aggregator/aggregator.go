@@ -25,6 +25,15 @@ func New(ctx context.Context, cfg Config) *Aggregator {
 	}
 }
 
+func (a *Aggregator) Start(context.Context) error { return nil }
+func (a *Aggregator) Stop(ctx context.Context) error {
+	for _, bs := range a.tickers {
+		bs.stopFiller()
+	}
+
+	return nil
+}
+
 // GetBars return last 'max' known bars
 func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) {
 	if max <= 0 {
@@ -51,6 +60,9 @@ func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool)
 
 	// result capacity is equal to the current count
 	res := make([]models.Bar, 0, max)
+
+	bs.Lock()
+	defer bs.Unlock()
 	for i := 0; i < max; i++ {
 		if newestIndex < 0 {
 			// in case we are going out of range

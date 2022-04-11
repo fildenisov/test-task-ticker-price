@@ -9,7 +9,6 @@ import (
 
 // bar stores agregated index value per time interval.
 type bar struct {
-	// sync.Mutex         // TODO: REMOVE
 	ts    int64   // unix timestamp
 	val   float64 // aggregated index value
 	count int     // incidates how many indexes were agregated in val
@@ -21,8 +20,6 @@ func (b *bar) update(tp string, intervalSec int) error {
 		return err
 	}
 
-	// b.Lock()
-	// defer b.Unlock()
 	// calculation average val
 	b.val = (b.val*float64(b.count) + val) / float64(b.count+1)
 	b.count++

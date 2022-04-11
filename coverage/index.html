@@ -67,7 +67,7 @@
 				
 				<option value="file5">price_aggregator/delivery/http/utils.go (0.0%)</option>
 				
-				<option value="file6">price_aggregator/domain/aggregator/aggregator.go (0.0%)</option>
+				<option value="file6">price_aggregator/domain/aggregator/aggregator.go (100.0%)</option>
 				
 				<option value="file7">price_aggregator/domain/aggregator/bar.go (98.0%)</option>
 				
@@ -330,7 +330,7 @@ type Aggregator struct {
 }
 
 // New is an Aggregator constuctor
-func New(ctx context.Context, cfg Config) *Aggregator <span class="cov0" title="0">{
+func New(ctx context.Context, cfg Config) *Aggregator <span class="cov1" title="1">{
         return &amp;Aggregator{
                 tickers:      make(map[models.Ticker]*bars),
                 barInverval:  cfg.BarInterval,
@@ -338,62 +338,67 @@ func New(ctx context.Context, cfg Config) *Aggregator <span class="cov0" title="
         }
 }</span>
 
+func (a *Aggregator) Start(context.Context) error <span class="cov1" title="1">{ return nil }</span>
+func (a *Aggregator) Stop(ctx context.Context) error <span class="cov1" title="1">{
+        for _, bs := range a.tickers </span><span class="cov1" title="1">{
+                bs.stopFiller()
+        }</span>
+
+        <span class="cov1" title="1">return nil</span>
+}
+
 // GetBars return last 'max' known bars
-func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) <span class="cov0" title="0">{
-        if max &lt;= 0 </span><span class="cov0" title="0">{
+func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) <span class="cov4" title="3">{
+        if max &lt;= 0 </span><span class="cov1" title="1">{
                 return []models.Bar{}, false
         }</span>
 
         // acquire read lock
-        <span class="cov0" title="0">a.RLock()
+        <span class="cov3" title="2">a.RLock()
         defer a.RUnlock()
 
         // search if ticker is known
         bs, ok := a.tickers[ticker]
-        if !ok </span><span class="cov0" title="0">{
+        if !ok </span><span class="cov1" title="1">{
                 return []models.Bar{}, false
         }</span>
 
         // max is limited by current queue length
-        <span class="cov0" title="0">if max &gt; bs.count </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">if max &gt; bs.count </span><span class="cov1" title="1">{
                 max = bs.count
         }</span>
 
         // the newest price is locked before current write position
-        <span class="cov0" title="0">newestIndex := bs.pos - 1
+        <span class="cov1" title="1">newestIndex := bs.pos - 1
 
         // result capacity is equal to the current count
         res := make([]models.Bar, 0, max)
-        for i := 0; i &lt; max; i++ </span><span class="cov0" title="0">{
-                if newestIndex &lt; 0 </span><span class="cov0" title="0">{
+
+        bs.Lock()
+        defer bs.Unlock()
+        for i := 0; i &lt; max; i++ </span><span class="cov10" title="15">{
+                if newestIndex &lt; 0 </span><span class="cov1" title="1">{
                         // in case we are going out of range
                         newestIndex = bs.count - 1
                 }</span>
 
-                <span class="cov0" title="0">res = append(res, models.Bar{
+                <span class="cov10" title="15">res = append(res, models.Bar{
                         TS:    bs.values[newestIndex].ts,
                         Price: bs.values[newestIndex].val,
                 })
                 newestIndex--</span>
         }
 
-        <span class="cov0" title="0">return res, true</span>
+        <span class="cov1" title="1">return res, true</span>
 }
 
-// addBar adds bar into the ticker queue
-func (a *Aggregator) addBar(t models.Ticker, b bar) {<span class="cov0" title="0">
-        // TODO: ...
-        // bs := a.getBars(t)
-        // bs.add(b)
-}</span>
-
 // getBars gets or created ticker bars
-func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov0" title="0">{
+func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov3" title="2">{
         a.RLock()
         bs, ok := a.tickers[t]
         a.RUnlock()
 
-        if !ok </span><span class="cov0" title="0">{
+        if !ok </span><span class="cov1" title="1">{
                 a.Lock()
 
                 bs = newBars(a.capPerTicker, int(a.barInverval.Seconds()))
@@ -401,11 +406,11 @@ func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov0" title="0"
 
                 a.Unlock()
         }</span>
-        <span class="cov0" title="0">return bs</span>
+        <span class="cov3" title="2">return bs</span>
 }
 
 // SubscribePriceStream subscribes aggregator to a new price source
-func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) <span class="cov0" title="0">{
+func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) <span class="cov3" title="2">{
         prices := make(chan models.TickerPrice)
         errs := make(chan error)
         bs := a.getBars(t)
@@ -432,14 +437,14 @@ type bar struct {
         count int     // incidates how many indexes were agregated in val
 }
 
-func (b *bar) update(tp string, intervalSec int) error <span class="cov9" title="2002">{
+func (b *bar) update(tp string, intervalSec int) error <span class="cov9" title="8002">{
         val, err := strconv.ParseFloat(tp, 64)
         if err != nil </span><span class="cov1" title="1">{
                 return err
         }</span>
 
         // calculation average val
-        <span class="cov9" title="2001">b.val = (b.val*float64(b.count) + val) / float64(b.count+1)
+        <span class="cov9" title="8001">b.val = (b.val*float64(b.count) + val) / float64(b.count+1)
         b.count++
 
         return nil</span>
@@ -456,7 +461,7 @@ type bars struct {
         intervalSec int           // stores interval duration in seconds
 }
 
-func newBars(cap, intervalSec int) *bars <span class="cov2" title="3">{
+func newBars(cap, intervalSec int) *bars <span class="cov2" title="4">{
         bs := &amp;bars{
                 values:      make([]bar, cap),
                 intervalSec: intervalSec,
@@ -468,58 +473,59 @@ func newBars(cap, intervalSec int) *bars <span class="cov2" title="3">{
 }</span>
 
 // add adds new empty bar into the queue.
-func (bs *bars) add(ts int64) *bar <span class="cov5" title="38">{
+func (bs *bars) add(ts int64) *bar <span class="cov4" title="38">{
         bs.values[bs.pos] = bar{
                 ts: ts,
         }
 
-        if bs.pos == len(bs.values)-1 </span><span class="cov3" title="6">{
+        if bs.pos == len(bs.values)-1 </span><span class="cov1" title="2">{
                 bs.pos = 0
-        }</span> else<span class="cov5" title="32"> {
+        }</span> else<span class="cov4" title="36"> {
                 bs.pos++
         }</span>
 
-        <span class="cov5" title="38">if bs.count != len(bs.values) </span><span class="cov4" title="16">{
+        <span class="cov4" title="38">if bs.count != len(bs.values) </span><span class="cov4" title="36">{
                 bs.count++
         }</span>
 
-        <span class="cov5" title="38">return &amp;bs.values[bs.pos]</span>
+        <span class="cov4" title="38">return &amp;bs.values[bs.pos]</span>
 }
 
 // get finds and return the bar, ts MUST be correct interval
-func (bs *bars) get(ts int64) *bar <span class="cov10" title="2016">{
+func (bs *bars) get(ts int64) *bar <span class="cov9" title="8033">{
         // get index of the newest bar
         pos := bs.pos - 1
-        if pos &lt; 0 </span><span class="cov3" title="9">{
-                pos = bs.count - 1
-        }</span>
+        for i := 0; i &lt; bs.count; i++ </span><span class="cov10" title="9013">{
+                if pos &lt; 0 </span><span class="cov6" title="395">{
+                        pos = bs.count - 1
+                }</span>
 
-        <span class="cov10" title="2016">for i := 0; i &lt; bs.count; i++ </span><span class="cov9" title="2013">{
                 // if ts matched = we've found the bar
-                if bs.values[i].ts == ts </span><span class="cov9" title="1978">{
-                        return &amp;bs.values[i]
+                <span class="cov10" title="9013">if bs.values[pos].ts == ts </span><span class="cov9" title="7995">{
+                        return &amp;bs.values[pos]
                 }</span>
 
                 // we will not be able to find the bar in the future
-                <span class="cov5" title="35">if bs.values[i].ts &lt; ts </span><span class="cov5" title="35">{
+                <span class="cov7" title="1018">if bs.values[pos].ts &lt; ts </span><span class="cov4" title="33">{
                         return nil
                 }</span>
+                <span class="cov7" title="985">pos--</span>
         }
 
-        <span class="cov2" title="3">return nil</span>
+        <span class="cov2" title="5">return nil</span>
 }
 
-func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- error) <span class="cov1" title="2">{
-        for tp := range prices </span><span class="cov9" title="2000">{
+func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- error) <span class="cov2" title="4">{
+        for tp := range prices </span><span class="cov9" title="8000">{
                 ts := tp.Time.Unix()
                 ts = ts - ts%int64(bs.intervalSec)
                 bs.Lock()
                 b := bs.get(ts)
-                if b == nil </span><span class="cov4" title="26">{
+                if b == nil </span><span class="cov4" title="24">{
                         b = bs.add(ts)
                 }</span>
 
-                <span class="cov9" title="2000">err := b.update(tp.Price, bs.intervalSec)
+                <span class="cov9" title="8000">err := b.update(tp.Price, bs.intervalSec)
                 bs.Unlock()
 
                 if err != nil </span><span class="cov0" title="0">{
@@ -529,28 +535,28 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
 }
 
 // startFiller starts filling empty bars in case there are no new tickers in the channel
-func (bs *bars) startFiller() <span class="cov2" title="3">{
+func (bs *bars) startFiller() <span class="cov2" title="4">{
         ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
-        go func() </span><span class="cov2" title="3">{
-                for </span><span class="cov4" title="19">{
+        go func() </span><span class="cov2" title="4">{
+                for </span><span class="cov4" title="37">{
                         select </span>{
-                        case &lt;-bs.stopFill:<span class="cov2" title="3"> // can be useful later if will decide to stop filler
+                        case &lt;-bs.stopFill:<span class="cov2" title="4"> // can be useful later if will decide to stop filler
                                 return</span>
-                        case t := &lt;-ticker.C:<span class="cov4" title="16">
+                        case t := &lt;-ticker.C:<span class="cov4" title="33">
                                 ts := t.Unix()
                                 ts = ts - ts%int64(bs.intervalSec)
                                 bs.Lock()
                                 b := bs.get(ts)
-                                if b == nil </span><span class="cov3" title="12">{
+                                if b == nil </span><span class="cov3" title="14">{
                                         b = bs.add(ts)
                                 }</span>
-                                <span class="cov4" title="16">bs.Unlock()</span>
+                                <span class="cov4" title="33">bs.Unlock()</span>
                         }
                 }
         }()
 }
 
-func (bs *bars) stopFiller() <span class="cov2" title="3">{
+func (bs *bars) stopFiller() <span class="cov2" title="4">{
         bs.stopFill &lt;- struct{}{}
 }</span>
 </pre>
