@@ -1,0 +1,8 @@
+starttimeout: 5s
+stoptimeout: 5s
+http:
+  address: 127.0.0.1:8080
+  starttimeout: 1s
+  stoptimeout: 1s
+  writetimeout: 30s
+

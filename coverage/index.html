@@ -1,0 +1,685 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>http: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">price_aggregator/cmd/http/main.go (5.0%)</option>
+				
+				<option value="file1">price_aggregator/delivery/http/health.go (0.0%)</option>
+				
+				<option value="file2">price_aggregator/delivery/http/http.go (0.0%)</option>
+				
+				<option value="file3">price_aggregator/delivery/http/middleware.go (0.0%)</option>
+				
+				<option value="file4">price_aggregator/delivery/http/route.go (0.0%)</option>
+				
+				<option value="file5">price_aggregator/delivery/http/utils.go (0.0%)</option>
+				
+				<option value="file6">price_aggregator/domain/aggregator/aggregator.go (0.0%)</option>
+				
+				<option value="file7">price_aggregator/domain/aggregator/bar.go (98.0%)</option>
+				
+				<option value="file8">price_aggregator/internal/app/app.go (0.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">no coverage</span>
+				<span class="cov1">low coverage</span>
+				<span class="cov2">*</span>
+				<span class="cov3">*</span>
+				<span class="cov4">*</span>
+				<span class="cov5">*</span>
+				<span class="cov6">*</span>
+				<span class="cov7">*</span>
+				<span class="cov8">*</span>
+				<span class="cov9">*</span>
+				<span class="cov10">high coverage</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "context"
+        "flag"
+        "os"
+        "os/signal"
+        "syscall"
+
+        "github.com/jinzhu/configor"
+        "github.com/rs/zerolog"
+        "github.com/rs/zerolog/log"
+
+        "price_aggregator/internal/app"
+)
+
+var configPath string
+
+func init() <span class="cov8" title="1">{
+        log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+}</span>
+func main() <span class="cov0" title="0">{
+        flag.StringVar(&amp;configPath, "config", "/etc/app/config.yaml", "Config file path")
+        flag.Parse()
+
+        var cfg app.Config
+        if err := configor.New(&amp;configor.Config{ErrorOnUnmatchedKeys: true}).Load(&amp;cfg, configPath); err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("cannot load config")
+        }</span>
+
+        <span class="cov0" title="0">application := app.New(cfg)
+
+        startCtx, startCancel := context.WithTimeout(context.Background(), cfg.StartTimeout)
+        defer startCancel()
+        if err := application.Start(startCtx); err != nil </span><span class="cov0" title="0">{
+                log.Fatal().Err(err).Msg("cannot start application")
+        }</span>
+
+        <span class="cov0" title="0">log.Info().Msg("application started")
+
+        quitCh := make(chan os.Signal, 1)
+        signal.Notify(quitCh, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+        &lt;-quitCh
+
+        stopCtx, stopCancel := context.WithTimeout(context.Background(), cfg.StopTimeout)
+        defer stopCancel()
+
+        if err := application.Stop(stopCtx); err != nil </span><span class="cov0" title="0">{
+                log.Error().Err(err).Msg("cannot stop application")
+        }</span>
+
+        <span class="cov0" title="0">log.Info().Msg("service is down")</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package http
+
+import (
+        "time"
+
+        "github.com/gofiber/fiber/v2"
+)
+
+var start = time.Now()
+
+// healthResp is a model for health response
+type healthResp struct {
+        Uptime    string
+        Time      string
+        Timestamp int32
+}
+
+// health is a handler for /v1/health path
+func (s *Server) health(ctx *fiber.Ctx) error <span class="cov0" title="0">{
+        resp := healthResp{
+                Uptime:    time.Since(start).String(),
+                Timestamp: int32(time.Now().Unix()),
+                Time:      time.Now().Format(time.RFC3339Nano),
+        }
+        return sendResponse(ctx, resp, 200)
+}</span>
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package http
+
+import (
+        "context"
+        "net/http"
+        "os"
+        "time"
+
+        fiber "github.com/gofiber/fiber/v2"
+        "github.com/pkg/errors"
+        "github.com/rs/zerolog"
+)
+
+// Server http
+type Server struct {
+        log *zerolog.Logger
+        cfg Config
+        srv *fiber.App
+}
+
+// New HTTP Server instance constructor
+func New(cfg Config) (*Server, error) <span class="cov0" title="0">{
+        l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
+        srv := fiber.New(fiber.Config{
+                WriteTimeout:             cfg.WriteTimeout,
+                ReadTimeout:              cfg.ReadTimeout,
+                DisableHeaderNormalizing: true,
+        })
+
+        return &amp;Server{
+                log: &amp;l,
+                cfg: cfg,
+                srv: srv,
+        }, nil
+}</span>
+
+func (s *Server) Start(ctx context.Context) error <span class="cov0" title="0">{
+        s.setMiddlewares()
+        s.setRoutes()
+
+        errCh := make(chan error)
+        s.log.Debug().Msgf("start listening %q", s.cfg.Address)
+        go func() </span><span class="cov0" title="0">{
+                if err := s.srv.Listen(s.cfg.Address); err != nil &amp;&amp; err != http.ErrServerClosed </span><span class="cov0" title="0">{
+                        errCh &lt;- errors.Wrap(err, "cannot listen and serve")
+                }</span>
+        }()
+
+        <span class="cov0" title="0">select </span>{
+        case err := &lt;-errCh:<span class="cov0" title="0">
+                return err</span>
+        case &lt;-time.After(s.cfg.StartTimeout):<span class="cov0" title="0">
+                return nil</span>
+        }
+}
+
+func (s *Server) Stop(context.Context) error <span class="cov0" title="0">{
+        errCh := make(chan error)
+        s.log.Debug().Msgf("start listening %q", s.cfg.Address)
+        go func() </span><span class="cov0" title="0">{
+                if err := s.srv.Shutdown(); err != nil </span><span class="cov0" title="0">{
+                        errCh &lt;- errors.Wrap(err, "cannot shutdown")
+                }</span>
+        }()
+
+        <span class="cov0" title="0">select </span>{
+        case err := &lt;-errCh:<span class="cov0" title="0">
+                return err</span>
+        case &lt;-time.After(s.cfg.StopTimeout):<span class="cov0" title="0">
+                return nil</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package http
+
+import (
+        "github.com/gofiber/fiber/v2"
+
+        "price_aggregator/consts"
+)
+
+func (s *Server) setMiddlewares() <span class="cov0" title="0">{
+        s.srv.Use(s.newLoggingMiddleware())
+}</span>
+
+func (s *Server) newLoggingMiddleware() func(*fiber.Ctx) (err error) <span class="cov0" title="0">{
+        return func(c *fiber.Ctx) (err error) </span><span class="cov0" title="0">{
+                chainErr := c.Next()
+
+                event := s.log.Info().
+                        Str(consts.FieldMethod, c.Method()).
+                        Str(consts.FieldURL, c.OriginalURL())
+
+                if chainErr != nil </span><span class="cov0" title="0">{
+                        event = event.Err(chainErr)
+                }</span>
+
+                <span class="cov0" title="0">event.Int("status", c.Response().StatusCode()).Msg("http request")
+                return chainErr</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package http
+
+func (s *Server) setRoutes() <span class="cov0" title="0">{
+        v1 := s.srv.Group("/v1")
+        v1.Get("/health", s.health)
+}</span>
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package http
+
+import (
+        "github.com/gofiber/fiber/v2"
+)
+
+// sendResponse is a shortcut to write a response
+func sendResponse(ctx *fiber.Ctx, resp interface{}, statusCode int) error <span class="cov0" title="0">{
+        ctx.Status(statusCode)
+
+        if ctx == nil </span><span class="cov0" title="0">{
+                return nil
+        }</span>
+
+        <span class="cov0" title="0">if err := ctx.JSON(resp); err != nil </span><span class="cov0" title="0">{
+                return err
+        }</span>
+
+        <span class="cov0" title="0">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">package aggregator
+
+import (
+        "context"
+        "price_aggregator/models"
+        "sync"
+        "time"
+)
+
+// Aggregator stores all aggregated values for different tickers.
+// Aggregator is concurrency safe.
+type Aggregator struct {
+        sync.RWMutex
+        tickers      map[models.Ticker]*bars
+        capPerTicker int
+        barInverval  time.Duration
+}
+
+// New is an Aggregator constuctor
+func New(ctx context.Context, cfg Config) *Aggregator <span class="cov0" title="0">{
+        return &amp;Aggregator{
+                tickers:      make(map[models.Ticker]*bars),
+                barInverval:  cfg.BarInterval,
+                capPerTicker: cfg.Capacity,
+        }
+}</span>
+
+// GetBars return last 'max' known bars
+func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) <span class="cov0" title="0">{
+        if max &lt;= 0 </span><span class="cov0" title="0">{
+                return []models.Bar{}, false
+        }</span>
+
+        // acquire read lock
+        <span class="cov0" title="0">a.RLock()
+        defer a.RUnlock()
+
+        // search if ticker is known
+        bs, ok := a.tickers[ticker]
+        if !ok </span><span class="cov0" title="0">{
+                return []models.Bar{}, false
+        }</span>
+
+        // max is limited by current queue length
+        <span class="cov0" title="0">if max &gt; bs.count </span><span class="cov0" title="0">{
+                max = bs.count
+        }</span>
+
+        // the newest price is locked before current write position
+        <span class="cov0" title="0">newestIndex := bs.pos - 1
+
+        // result capacity is equal to the current count
+        res := make([]models.Bar, 0, max)
+        for i := 0; i &lt; max; i++ </span><span class="cov0" title="0">{
+                if newestIndex &lt; 0 </span><span class="cov0" title="0">{
+                        // in case we are going out of range
+                        newestIndex = bs.count - 1
+                }</span>
+
+                <span class="cov0" title="0">res = append(res, models.Bar{
+                        TS:    bs.values[newestIndex].ts,
+                        Price: bs.values[newestIndex].val,
+                })
+                newestIndex--</span>
+        }
+
+        <span class="cov0" title="0">return res, true</span>
+}
+
+// addBar adds bar into the ticker queue
+func (a *Aggregator) addBar(t models.Ticker, b bar) {<span class="cov0" title="0">
+        // TODO: ...
+        // bs := a.getBars(t)
+        // bs.add(b)
+}</span>
+
+// getBars gets or created ticker bars
+func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov0" title="0">{
+        a.RLock()
+        bs, ok := a.tickers[t]
+        a.RUnlock()
+
+        if !ok </span><span class="cov0" title="0">{
+                a.Lock()
+
+                bs = newBars(a.capPerTicker, int(a.barInverval.Seconds()))
+                a.tickers[t] = bs
+
+                a.Unlock()
+        }</span>
+        <span class="cov0" title="0">return bs</span>
+}
+
+// SubscribePriceStream subscribes aggregator to a new price source
+func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) <span class="cov0" title="0">{
+        prices := make(chan models.TickerPrice)
+        errs := make(chan error)
+        bs := a.getBars(t)
+
+        go bs.updater(prices, errs)
+
+        return prices, errs
+}</span>
+</pre>
+		
+		<pre class="file" id="file7" style="display: none">package aggregator
+
+import (
+        "price_aggregator/models"
+        "strconv"
+        "sync"
+        "time"
+)
+
+// bar stores agregated index value per time interval.
+type bar struct {
+        ts    int64   // unix timestamp
+        val   float64 // aggregated index value
+        count int     // incidates how many indexes were agregated in val
+}
+
+func (b *bar) update(tp string, intervalSec int) error <span class="cov9" title="2002">{
+        val, err := strconv.ParseFloat(tp, 64)
+        if err != nil </span><span class="cov1" title="1">{
+                return err
+        }</span>
+
+        // calculation average val
+        <span class="cov9" title="2001">b.val = (b.val*float64(b.count) + val) / float64(b.count+1)
+        b.count++
+
+        return nil</span>
+}
+
+// bars stores circular queue of []bar.
+// It provides concurrently safe add() method that cicles the queue if necessory.
+type bars struct {
+        sync.Mutex
+        values      []bar         // circular queue for all aggregated bars
+        stopFill    chan struct{} // send anything to stop filler
+        pos         int           // stores current index for next write
+        count       int           // stores total for all filled bars. max(count) = len(values)
+        intervalSec int           // stores interval duration in seconds
+}
+
+func newBars(cap, intervalSec int) *bars <span class="cov2" title="3">{
+        bs := &amp;bars{
+                values:      make([]bar, cap),
+                intervalSec: intervalSec,
+                stopFill:    make(chan struct{}),
+        }
+        bs.startFiller()
+        return bs
+
+}</span>
+
+// add adds new empty bar into the queue.
+func (bs *bars) add(ts int64) *bar <span class="cov5" title="38">{
+        bs.values[bs.pos] = bar{
+                ts: ts,
+        }
+
+        if bs.pos == len(bs.values)-1 </span><span class="cov3" title="6">{
+                bs.pos = 0
+        }</span> else<span class="cov5" title="32"> {
+                bs.pos++
+        }</span>
+
+        <span class="cov5" title="38">if bs.count != len(bs.values) </span><span class="cov4" title="16">{
+                bs.count++
+        }</span>
+
+        <span class="cov5" title="38">return &amp;bs.values[bs.pos]</span>
+}
+
+// get finds and return the bar, ts MUST be correct interval
+func (bs *bars) get(ts int64) *bar <span class="cov10" title="2016">{
+        // get index of the newest bar
+        pos := bs.pos - 1
+        if pos &lt; 0 </span><span class="cov3" title="9">{
+                pos = bs.count - 1
+        }</span>
+
+        <span class="cov10" title="2016">for i := 0; i &lt; bs.count; i++ </span><span class="cov9" title="2013">{
+                // if ts matched = we've found the bar
+                if bs.values[i].ts == ts </span><span class="cov9" title="1978">{
+                        return &amp;bs.values[i]
+                }</span>
+
+                // we will not be able to find the bar in the future
+                <span class="cov5" title="35">if bs.values[i].ts &lt; ts </span><span class="cov5" title="35">{
+                        return nil
+                }</span>
+        }
+
+        <span class="cov2" title="3">return nil</span>
+}
+
+func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- error) <span class="cov1" title="2">{
+        for tp := range prices </span><span class="cov9" title="2000">{
+                ts := tp.Time.Unix()
+                ts = ts - ts%int64(bs.intervalSec)
+                bs.Lock()
+                b := bs.get(ts)
+                if b == nil </span><span class="cov4" title="26">{
+                        b = bs.add(ts)
+                }</span>
+
+                <span class="cov9" title="2000">err := b.update(tp.Price, bs.intervalSec)
+                bs.Unlock()
+
+                if err != nil </span><span class="cov0" title="0">{
+                        errs &lt;- err
+                }</span>
+        }
+}
+
+// startFiller starts filling empty bars in case there are no new tickers in the channel
+func (bs *bars) startFiller() <span class="cov2" title="3">{
+        ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
+        go func() </span><span class="cov2" title="3">{
+                for </span><span class="cov4" title="19">{
+                        select </span>{
+                        case &lt;-bs.stopFill:<span class="cov2" title="3"> // can be useful later if will decide to stop filler
+                                return</span>
+                        case t := &lt;-ticker.C:<span class="cov4" title="16">
+                                ts := t.Unix()
+                                ts = ts - ts%int64(bs.intervalSec)
+                                bs.Lock()
+                                b := bs.get(ts)
+                                if b == nil </span><span class="cov3" title="12">{
+                                        b = bs.add(ts)
+                                }</span>
+                                <span class="cov4" title="16">bs.Unlock()</span>
+                        }
+                }
+        }()
+}
+
+func (bs *bars) stopFiller() <span class="cov2" title="3">{
+        bs.stopFill &lt;- struct{}{}
+}</span>
+</pre>
+		
+		<pre class="file" id="file8" style="display: none">package app
+
+import (
+        "context"
+        "os"
+
+        "github.com/pkg/errors"
+        "github.com/rs/zerolog"
+        "golang.org/x/sync/errgroup"
+
+        "price_aggregator/consts"
+        "price_aggregator/delivery/http"
+        "price_aggregator/internal/rep"
+)
+
+var (
+        ErrStartTimeout    = errors.New("start timeout")
+        ErrShutdownTimeout = errors.New("shutdown timeout")
+)
+
+type Cmp struct {
+        Name    string
+        Service rep.Lifecycle
+}
+
+type App struct {
+        log  *zerolog.Logger
+        cfg  Config
+        cmps []Cmp
+}
+
+func New(cfg Config) *App <span class="cov0" title="0">{
+        l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "app").Logger()
+        return &amp;App{
+                log:  &amp;l,
+                cfg:  cfg,
+                cmps: []Cmp{},
+        }
+}</span>
+func (a *App) Start(ctx context.Context) error <span class="cov0" title="0">{
+        a.log.Info().Msg("starting application")
+
+        h, err := http.New(a.cfg.HTTP)
+        if err != nil </span><span class="cov0" title="0">{
+                a.log.Fatal().Err(err).Msg("cannot create http")
+        }</span>
+        <span class="cov0" title="0">a.cmps = append(a.cmps, Cmp{"http", h})
+
+        okCh, errCh := make(chan struct{}), make(chan error)
+        go func() </span><span class="cov0" title="0">{
+                for _, cmp := range a.cmps </span><span class="cov0" title="0">{
+                        a.log.Info().Msgf("%v is starting", cmp.Name)
+                        if err := cmp.Service.Start(ctx); err != nil </span><span class="cov0" title="0">{
+                                a.log.Error().Err(err).Msgf(consts.FmtCannotStart, cmp.Name)
+                                errCh &lt;- errors.Wrapf(err, consts.FmtCannotStart, cmp.Name)
+                        }</span>
+                }
+
+                <span class="cov0" title="0">okCh &lt;- struct{}{}</span>
+        }()
+
+        <span class="cov0" title="0">select </span>{
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return ErrStartTimeout</span>
+        case err := &lt;-errCh:<span class="cov0" title="0">
+                return err</span>
+        case &lt;-okCh:<span class="cov0" title="0">
+                return nil</span>
+        }
+}
+
+func (a *App) Stop(ctx context.Context) error <span class="cov0" title="0">{
+        a.log.Info().Msg("shutting down service...")
+
+        errCh := make(chan error)
+        go func() </span><span class="cov0" title="0">{
+                gr, ctx := errgroup.WithContext(ctx)
+                for _, cmp := range a.cmps </span><span class="cov0" title="0">{
+                        a.log.Info().Msgf("stopping %q...", cmp.Name)
+                        if err := cmp.Service.Stop(ctx); err != nil </span><span class="cov0" title="0">{
+                                a.log.Error().Err(err).Msgf("cannot stop %q", cmp.Name)
+                        }</span>
+                }
+                <span class="cov0" title="0">errCh &lt;- gr.Wait()</span>
+        }()
+
+        <span class="cov0" title="0">select </span>{
+        case &lt;-ctx.Done():<span class="cov0" title="0">
+                return ErrShutdownTimeout</span>
+        case err := &lt;-errCh:<span class="cov0" title="0">
+                if err != nil </span><span class="cov0" title="0">{
+                        return err
+                }</span>
+                <span class="cov0" title="0">return nil</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

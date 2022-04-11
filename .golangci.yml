@@ -1,0 +1,175 @@
+# Options for analysis running.
+run:
+  # Default concurrency is a available CPU number.
+  concurrency: 4
+  # Timeout for analysis. e.g. 30s, default is 1m.
+  deadline: 2m
+  # Exit code when at least one issue was found, default is 1.
+  issues-exit-code: 10
+  # Include test files, default is true.
+  tests: false
+  skip-dirs:
+    - gen
+    - mock
+    - third
+  skip-dirs-use-default: true
+  skip-files:
+    - _test\.go
+  go: 1.17
+
+# Output configuration options.
+output:
+  # Output styling.
+  # e.g. colored-line-number, line-number, json, tab, checkstyle, code-climate.
+  # Default is colored-line-number.
+  format: colored-line-number
+  # Print lines of code with issue, default is true.
+  print-issued-lines: true
+  # Print linter name in the end of issue text, default is true.
+  print-linter-name: true
+
+# All available settings of specific linters.
+linters-settings:
+  # Checks whether code was formatted.
+  gofmt:
+    # Simplify code: gofmt with `-s` option, true by default.
+    simplify: true
+  # Computes and checks the cyclomatic complexity of functions.
+  gocyclo:
+    # Minimal code complexity to report, 30 by default but recommend 10-20.
+    min-complexity: 12
+  # Detects Go structs that would take less memory if their fields were sorted.
+  maligned:
+    # Print struct with more effective memory layout, false by default.
+    suggest-new: true
+  #    auto-fix: true
+  # Detects code cloning.
+  dupl:
+    # Tokens count to trigger issue, 150 by default.
+    threshold: 100
+  # Checks if package imports are in a list of acceptable packages.
+  depguard:
+    list-type: blacklist
+    include-go-root: false
+    packages:
+      - github.com/davecgh/go-spew/spew
+  # Finds commonly misspelled English words in comments.
+  misspell:
+    locale: US
+    ignore-words:
+      - github.com/gofiber/fiber
+  stylecheck:
+    checks:
+      - all
+      - "-ST1000"
+      - "-ST1016"
+      - "-ST1020"
+      - "-ST1021"
+      - "-ST1022"
+  # Reports long lines.
+  lll:
+    # Max line length, lines longer will be reported, 120 by default.
+    line-length: 120
+    # Tab width in spaces, 1 by default.
+    tab-width: 8
+  decorder:
+    # Required order of `type`, `const`, `var` and `func` declarations inside a file.
+    # Default: types before constants before variables before functions.
+    dec-order:
+      - const
+      - var
+    # If true, order of declarations is not checked at all.
+    # Default: true (disabled)
+    disable-dec-order-check: false
+    # If true, `init` func can be anywhere in file (does not have to be declared before all other functions).
+    # Default: true (disabled)
+    disable-init-func-first-check: false
+    # If true, multiple global `type`, `const` and `var` declarations are allowed.
+    # Default: true (disabled)
+    disable-dec-num-check: true
+  goconst:
+    # Minimal length of string constant.
+    # Default: 3
+    min-len: 3
+    # Minimum occurrences of constant string count to trigger issue.
+    # Default: 3
+    min-occurrences: 2
+    # Ignore test files.
+    # Default: false
+    ignore-tests: true
+    # Look for existing constants matching the values.
+    # Default: true
+    match-constant: true
+    # Search also for duplicated numbers.
+    # Default: false
+    numbers: true
+    # Minimum value, only works with goconst.numbers
+    # Default: 3
+    min: 2
+    # Maximum value, only works with goconst.numbers
+    # Default: 3
+    max: 2
+    # Ignore when constant is not used as function argument.
+    # Default: true
+    ignore-calls: false
+
+# List of enabled linters.
+linters:
+  enable:
+    - bodyclose
+    - deadcode
+    - dupl
+    - errcheck
+    - goconst
+    - gocritic
+    - gocyclo
+    - goimports
+    - gosimple
+    - gosec
+    - govet
+    - ineffassign
+    - interfacer
+    - lll
+    - maligned
+    - misspell
+    - nakedret
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - decorder
+    - goconst
+  fast: false
+
+# Linter exception and limit rules.
+issues:
+  # Excluding configuration per-path, per-linter, per-text and per-source.
+  exclude-rules:
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - lll
+    - path: proto.go
+      linters:
+        - misspell
+    - path: routecalculator.go
+      linters:
+        - misspell
+    - linters:
+        - lll
+      source: "^//go:generate "
+    - linters:
+        - lll
+      source: "^// @"
+  # Independently from option "exclude" option (if set), let default exclude patterns be used.
+  # Default is true.
+  exclude-use-default: true
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0
+  fix: true
+
