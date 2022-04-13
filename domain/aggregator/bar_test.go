@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fildenisov/test-task-ticker-price/models"
+	"github.com/rs/zerolog"
 )
 
 func TestBarUpdate(t *testing.T) {
@@ -38,7 +39,9 @@ func TestBarUpdate(t *testing.T) {
 func TestNewBars(t *testing.T) {
 	t.Parallel()
 
-	bs := newBars(100, 1)
+	l := zerolog.Nop()
+	bs := newBars(&l, models.BTCUSDTicker, 100, 1)
+
 	time.Sleep(6 * time.Second)
 	bs.stopFiller()
 
@@ -56,7 +59,10 @@ func TestNewBars(t *testing.T) {
 
 func TestNewBarsOverflow(t *testing.T) {
 	t.Parallel()
-	bs := newBars(5, 1)
+
+	l := zerolog.Nop()
+	bs := newBars(&l, models.BTCUSDTicker, 5, 1)
+
 	time.Sleep(6 * time.Second)
 	bs.stopFiller()
 
@@ -83,7 +89,9 @@ func TestNewBarsOverflow(t *testing.T) {
 
 func TestBarsUpdater(t *testing.T) {
 	t.Parallel()
-	bs := newBars(20, 1)
+
+	l := zerolog.Nop()
+	bs := newBars(&l, models.BTCUSDTicker, 20, 1)
 
 	prices := make(chan models.TickerPrice)
 	errs := make(chan error)

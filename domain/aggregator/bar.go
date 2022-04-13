@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rs/zerolog"
+
 	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
@@ -32,6 +34,8 @@ func (b *bar) update(tp string, intervalSec int) error {
 // It provides concurrently safe add() method that cicles the queue if necessory.
 type bars struct {
 	sync.Mutex
+	log         *zerolog.Logger
+	ticker      models.Ticker
 	values      []bar         // circular queue for all aggregated bars
 	stopFill    chan struct{} // send anything to stop filler
 	pos         int           // stores current index for next write
@@ -39,8 +43,10 @@ type bars struct {
 	intervalSec int           // stores interval duration in seconds
 }
 
-func newBars(cap, intervalSec int) *bars {
+func newBars(log *zerolog.Logger, t models.Ticker, cap, intervalSec int) *bars {
 	bs := &bars{
+		log:         log,
+		ticker:      t,
 		values:      make([]bar, cap),
 		intervalSec: intervalSec,
 		stopFill:    make(chan struct{}),
@@ -107,6 +113,11 @@ func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 		bs.Unlock()
 
 		if err != nil {
+			bs.log.Error().Err(err).
+				Stringer("ticker", tp.Ticker).
+				Int64("ts", ts).
+				Str("price", tp.Price).
+				Msg("bar update failed")
 			errs <- err
 		}
 	}
@@ -116,6 +127,7 @@ func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 func (bs *bars) startFiller() {
 	ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
 	go func() {
+		bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is started")
 		for {
 			select {
 			case <-bs.stopFill: // can be useful later if will decide to stop filler
@@ -135,5 +147,6 @@ func (bs *bars) startFiller() {
 }
 
 func (bs *bars) stopFiller() {
+	bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is stopped")
 	bs.stopFill <- struct{}{}
 }

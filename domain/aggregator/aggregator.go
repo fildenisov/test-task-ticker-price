@@ -106,7 +106,7 @@ func (a *Aggregator) getBars(t models.Ticker) *bars {
 
 	if !ok {
 		a.log.Debug().Stringer("ticker", t).Msg("creating ticker bars")
-		bs = newBars(a.capPerTicker, int(a.barInverval.Seconds()))
+		bs = newBars(a.log, t, a.capPerTicker, int(a.barInverval.Seconds()))
 		a.tickers[t] = bs
 	}
 	return bs

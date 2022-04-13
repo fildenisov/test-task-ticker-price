@@ -9,6 +9,8 @@ import (
 	fiber "github.com/gofiber/fiber/v2"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
+
+	"github.com/fildenisov/test-task-ticker-price/domain/aggregator"
 )
 
 // Server http
@@ -16,10 +18,11 @@ type Server struct {
 	log *zerolog.Logger
 	cfg Config
 	srv *fiber.App
+	agg *aggregator.Aggregator
 }
 
 // New HTTP Server instance constructor
-func New(cfg Config) *Server {
+func New(cfg Config, agg *aggregator.Aggregator) *Server {
 	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
 	srv := fiber.New(fiber.Config{
 		WriteTimeout:             cfg.WriteTimeout,
@@ -31,9 +34,11 @@ func New(cfg Config) *Server {
 		log: &l,
 		cfg: cfg,
 		srv: srv,
+		agg: agg,
 	}
 }
 
+// Start starts http server
 func (s *Server) Start(ctx context.Context) error {
 	s.setMiddlewares()
 	s.setRoutes()
@@ -54,6 +59,7 @@ func (s *Server) Start(ctx context.Context) error {
 	}
 }
 
+// Stop stops http server
 func (s *Server) Stop(context.Context) error {
 	errCh := make(chan error)
 	s.log.Debug().Msgf("start listening %q", s.cfg.Address)

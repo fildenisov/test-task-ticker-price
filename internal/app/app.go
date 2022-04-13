@@ -15,33 +15,37 @@ import (
 	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
-type Cmp struct {
+type cmp struct {
 	Name    string
 	Service rep.Lifecycle
 }
 
+// App respesents the application.
+// Import App only in cmd derectory.
 type App struct {
 	log  *zerolog.Logger
 	cfg  Config
-	cmps []Cmp
+	cmps []cmp
 }
 
+// New is a constructor for App
 func New(cfg Config) *App {
 	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "app").Logger()
 	return &App{
 		log:  &l,
 		cfg:  cfg,
-		cmps: []Cmp{},
+		cmps: []cmp{},
 	}
 }
+
+// Start starts application
 func (a *App) Start(ctx context.Context) error {
 	a.log.Info().Msg("starting application")
 
 	agg := aggregator.New(a.cfg.Aggregator)
+	h := http.New(a.cfg.HTTP, agg)
 
-	h := http.New(a.cfg.HTTP)
-
-	a.cmps = append(a.cmps, Cmp{"http", h}, Cmp{"aggregator", agg})
+	a.cmps = append(a.cmps, cmp{"http", h}, cmp{"aggregator", agg})
 
 	okCh, errCh := make(chan struct{}), make(chan error)
 	go func() {
@@ -66,6 +70,7 @@ func (a *App) Start(ctx context.Context) error {
 	}
 }
 
+// Stop stops application
 func (a *App) Stop(ctx context.Context) error {
 	a.log.Info().Msg("shutting down service...")
 
