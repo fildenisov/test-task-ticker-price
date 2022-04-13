@@ -5,4 +5,7 @@ http:
   starttimeout: 1s
   stoptimeout: 1s
   writetimeout: 30s
+aggregator:
+  capacity: 1000
+  barinterval: 1s
 

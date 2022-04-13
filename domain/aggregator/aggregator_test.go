@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"price_aggregator/models"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 func TestAggregator(t *testing.T) {
-	// t.Skip()
 	t.Parallel()
 
 	cfg := Config{
@@ -20,7 +20,7 @@ func TestAggregator(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	a := New(ctx, cfg)
+	a := New(cfg)
 	if err := a.Start(ctx); err != nil {
 		t.Error("got err on Start")
 	}

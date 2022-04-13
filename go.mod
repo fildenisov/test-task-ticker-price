@@ -1,4 +1,4 @@
-module price_aggregator
+module github.com/fildenisov/test-task-ticker-price
 
 go 1.16
 

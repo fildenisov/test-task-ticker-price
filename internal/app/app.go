@@ -8,14 +8,11 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 
-	"price_aggregator/consts"
-	"price_aggregator/delivery/http"
-	"price_aggregator/internal/rep"
-)
-
-var (
-	ErrStartTimeout    = errors.New("start timeout")
-	ErrShutdownTimeout = errors.New("shutdown timeout")
+	"github.com/fildenisov/test-task-ticker-price/consts"
+	"github.com/fildenisov/test-task-ticker-price/delivery/http"
+	"github.com/fildenisov/test-task-ticker-price/domain/aggregator"
+	"github.com/fildenisov/test-task-ticker-price/internal/rep"
+	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 type Cmp struct {
@@ -40,11 +37,11 @@ func New(cfg Config) *App {
 func (a *App) Start(ctx context.Context) error {
 	a.log.Info().Msg("starting application")
 
-	h, err := http.New(a.cfg.HTTP)
-	if err != nil {
-		a.log.Fatal().Err(err).Msg("cannot create http")
-	}
-	a.cmps = append(a.cmps, Cmp{"http", h})
+	agg := aggregator.New(a.cfg.Aggregator)
+
+	h := http.New(a.cfg.HTTP)
+
+	a.cmps = append(a.cmps, Cmp{"http", h}, Cmp{"aggregator", agg})
 
 	okCh, errCh := make(chan struct{}), make(chan error)
 	go func() {
@@ -61,7 +58,7 @@ func (a *App) Start(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		return ErrStartTimeout
+		return models.ErrStartTimeout
 	case err := <-errCh:
 		return err
 	case <-okCh:
@@ -86,7 +83,7 @@ func (a *App) Stop(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		return ErrShutdownTimeout
+		return models.ErrShutdownTimeout
 	case err := <-errCh:
 		if err != nil {
 			return err

@@ -2,23 +2,30 @@ package aggregator
 
 import (
 	"context"
-	"price_aggregator/models"
+	"os"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog"
+
+	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 // Aggregator stores all aggregated values for different tickers.
 // Aggregator is concurrency safe.
 type Aggregator struct {
 	sync.RWMutex
+	log          *zerolog.Logger
 	tickers      map[models.Ticker]*bars
 	capPerTicker int
 	barInverval  time.Duration
 }
 
 // New is an Aggregator constuctor
-func New(ctx context.Context, cfg Config) *Aggregator {
+func New(cfg Config) *Aggregator {
+	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
 	return &Aggregator{
+		log:          &l,
 		tickers:      make(map[models.Ticker]*bars),
 		barInverval:  cfg.BarInterval,
 		capPerTicker: cfg.Capacity,
@@ -34,8 +41,19 @@ func (a *Aggregator) Stop(ctx context.Context) error {
 	return nil
 }
 
+// SubscribePriceStream subscribes aggregator to a new price source
+func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) {
+	prices := make(chan models.TickerPrice)
+	errs := make(chan error)
+	bs := a.getBars(t)
+
+	go bs.updater(prices, errs)
+
+	return prices, errs
+}
+
 // GetBars return last 'max' known bars
-func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) {
+func (a *Aggregator) GetBars(t models.Ticker, max int) ([]models.Bar, bool) {
 	if max <= 0 {
 		return []models.Bar{}, false
 	}
@@ -45,8 +63,9 @@ func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool)
 	defer a.RUnlock()
 
 	// search if ticker is known
-	bs, ok := a.tickers[ticker]
+	bs, ok := a.tickers[t]
 	if !ok {
+		a.log.Debug().Stringer("ticker", t).Msg("ticker not found")
 		return []models.Bar{}, false
 	}
 
@@ -81,28 +100,14 @@ func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool)
 
 // getBars gets or created ticker bars
 func (a *Aggregator) getBars(t models.Ticker) *bars {
-	a.RLock()
+	a.Lock()
+	defer a.Unlock()
 	bs, ok := a.tickers[t]
-	a.RUnlock()
 
 	if !ok {
-		a.Lock()
-
+		a.log.Debug().Stringer("ticker", t).Msg("creating ticker bars")
 		bs = newBars(a.capPerTicker, int(a.barInverval.Seconds()))
 		a.tickers[t] = bs
-
-		a.Unlock()
 	}
 	return bs
-}
-
-// SubscribePriceStream subscribes aggregator to a new price source
-func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) {
-	prices := make(chan models.TickerPrice)
-	errs := make(chan error)
-	bs := a.getBars(t)
-
-	go bs.updater(prices, errs)
-
-	return prices, errs
 }

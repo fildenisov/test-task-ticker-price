@@ -5,8 +5,9 @@
 package mocks
 
 import (
-	models "price_aggregator/models"
 	reflect "reflect"
+
+	models "github.com/fildenisov/test-task-ticker-price/models"
 
 	gomock "github.com/golang/mock/gomock"
 )

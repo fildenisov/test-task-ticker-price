@@ -3,7 +3,7 @@ package http
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"price_aggregator/consts"
+	"github.com/fildenisov/test-task-ticker-price/consts"
 )
 
 func (s *Server) setMiddlewares() {

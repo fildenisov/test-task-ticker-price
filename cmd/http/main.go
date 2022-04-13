@@ -11,7 +11,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"price_aggregator/internal/app"
+	"github.com/fildenisov/test-task-ticker-price/internal/app"
 )
 
 var configPath string

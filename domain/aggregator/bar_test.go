@@ -3,10 +3,11 @@ package aggregator
 import (
 	"fmt"
 	"math/rand"
-	"price_aggregator/models"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 func TestBarUpdate(t *testing.T) {

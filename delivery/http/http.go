@@ -19,7 +19,7 @@ type Server struct {
 }
 
 // New HTTP Server instance constructor
-func New(cfg Config) (*Server, error) {
+func New(cfg Config) *Server {
 	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
 	srv := fiber.New(fiber.Config{
 		WriteTimeout:             cfg.WriteTimeout,
@@ -31,7 +31,7 @@ func New(cfg Config) (*Server, error) {
 		log: &l,
 		cfg: cfg,
 		srv: srv,
-	}, nil
+	}
 }
 
 func (s *Server) Start(ctx context.Context) error {

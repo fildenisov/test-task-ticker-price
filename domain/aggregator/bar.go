@@ -1,10 +1,11 @@
 package aggregator
 
 import (
-	"price_aggregator/models"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 // bar stores agregated index value per time interval.
