@@ -33,10 +33,10 @@ func (b *bar) update(tp string) error {
 // bars stores circular queue of []bar.
 // It provides concurrently safe add() method that cicles the queue if necessory.
 type bars struct {
+	log         *zerolog.Logger
 	stopFill    chan struct{} // send anything to stop filler
 	values      []bar         // circular queue for all aggregated bars
 	ticker      models.Ticker
-	log         *zerolog.Logger
 	pos         int // stores current index for next write
 	count       int // stores total for all filled bars. max(count) = len(values)
 	intervalSec int // stores interval duration in seconds
