@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/fildenisov/test-task-ticker-price/consts"
 	"github.com/fildenisov/test-task-ticker-price/domain/aggregator"
 	"github.com/fildenisov/test-task-ticker-price/models"
 	"github.com/rs/zerolog"
@@ -47,7 +48,7 @@ func (f *FakeStream) Stop(ctx context.Context) error {
 
 func (f *FakeStream) worker(tp chan models.TickerPrice, errs chan error) {
 
-	f.log.Debug().Str(models.KeyTicker, f.cfg.Ticker).Msg("fake stream worker started")
+	f.log.Debug().Str(consts.KeyTicker, f.cfg.Ticker).Msg("fake stream worker started")
 	errDone := make(chan bool)
 
 	go func() {

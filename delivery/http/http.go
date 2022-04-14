@@ -10,19 +10,19 @@ import (
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 
-	"github.com/fildenisov/test-task-ticker-price/domain/aggregator"
+	"github.com/fildenisov/test-task-ticker-price/internal/rep"
 )
 
 // Server http
 type Server struct {
 	log *zerolog.Logger
 	srv *fiber.App
-	agg *aggregator.Aggregator
+	agg rep.Aggregator
 	cfg Config
 }
 
 // New HTTP Server instance constructor
-func New(cfg Config, agg *aggregator.Aggregator) *Server {
+func New(cfg Config, agg rep.Aggregator) *Server {
 	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().
 		Str("cmp", "http").Logger()
 	srv := fiber.New(fiber.Config{

@@ -1,4 +1,4 @@
-package models
+package consts
 
 const (
 	KeyTicker = "ticker"

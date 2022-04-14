@@ -8,6 +8,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/fildenisov/test-task-ticker-price/consts"
 	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
@@ -69,7 +70,7 @@ func (a *Aggregator) GetBars(t models.Ticker, max int) ([]models.Bar, bool) {
 	// search if ticker is known
 	bs, ok := a.tickers[t]
 	if !ok {
-		a.log.Debug().Stringer(models.KeyTicker, t).Msg("ticker not found")
+		a.log.Debug().Stringer(consts.KeyTicker, t).Msg("ticker not found")
 		return []models.Bar{}, false
 	}
 
@@ -109,7 +110,7 @@ func (a *Aggregator) getBars(t models.Ticker) *bars {
 	bs, ok := a.tickers[t]
 
 	if !ok {
-		a.log.Debug().Stringer(models.KeyTicker, t).Msg("creating ticker bars")
+		a.log.Debug().Stringer(consts.KeyTicker, t).Msg("creating ticker bars")
 		bs = newBars(a.log, t, a.capPerTicker, int(a.barInverval.Seconds()))
 		a.tickers[t] = bs
 	}

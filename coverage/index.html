@@ -237,19 +237,19 @@ import (
         "github.com/pkg/errors"
         "github.com/rs/zerolog"
 
-        "github.com/fildenisov/test-task-ticker-price/domain/aggregator"
+        "github.com/fildenisov/test-task-ticker-price/internal/rep"
 )
 
 // Server http
 type Server struct {
         log *zerolog.Logger
         srv *fiber.App
-        agg *aggregator.Aggregator
+        agg rep.Aggregator
         cfg Config
 }
 
 // New HTTP Server instance constructor
-func New(cfg Config, agg *aggregator.Aggregator) *Server <span class="cov0" title="0">{
+func New(cfg Config, agg rep.Aggregator) *Server <span class="cov0" title="0">{
         l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().
                 Str("cmp", "http").Logger()
         srv := fiber.New(fiber.Config{
@@ -384,6 +384,7 @@ import (
 
         "github.com/rs/zerolog"
 
+        "github.com/fildenisov/test-task-ticker-price/consts"
         "github.com/fildenisov/test-task-ticker-price/models"
 )
 
@@ -445,7 +446,7 @@ func (a *Aggregator) GetBars(t models.Ticker, max int) ([]models.Bar, bool) <spa
         // search if ticker is known
         bs, ok := a.tickers[t]
         if !ok </span><span class="cov1" title="1">{
-                a.log.Debug().Stringer(models.KeyTicker, t).Msg("ticker not found")
+                a.log.Debug().Stringer(consts.KeyTicker, t).Msg("ticker not found")
                 return []models.Bar{}, false
         }</span>
 
@@ -485,7 +486,7 @@ func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov3" title="2"
         bs, ok := a.tickers[t]
 
         if !ok </span><span class="cov1" title="1">{
-                a.log.Debug().Stringer(models.KeyTicker, t).Msg("creating ticker bars")
+                a.log.Debug().Stringer(consts.KeyTicker, t).Msg("creating ticker bars")
                 bs = newBars(a.log, t, a.capPerTicker, int(a.barInverval.Seconds()))
                 a.tickers[t] = bs
         }</span>
@@ -502,6 +503,7 @@ import (
 
         "github.com/rs/zerolog"
 
+        "github.com/fildenisov/test-task-ticker-price/consts"
         "github.com/fildenisov/test-task-ticker-price/models"
 )
 
@@ -574,21 +576,21 @@ func (bs *bars) add(ts int64) *bar <span class="cov4" title="37">{
 func (bs *bars) get(ts int64) *bar <span class="cov9" title="8033">{
         // get index of the newest bar
         pos := bs.pos - 1
-        for i := 0; i &lt; bs.count; i++ </span><span class="cov10" title="9005">{
-                if pos &lt; 0 </span><span class="cov6" title="392">{
+        for i := 0; i &lt; bs.count; i++ </span><span class="cov10" title="9011">{
+                if pos &lt; 0 </span><span class="cov6" title="374">{
                         pos = bs.count - 1
                 }</span>
 
                 // if ts matched = we've found the bar
-                <span class="cov10" title="9005">if bs.values[pos].ts == ts </span><span class="cov9" title="7996">{
+                <span class="cov10" title="9011">if bs.values[pos].ts == ts </span><span class="cov9" title="7996">{
                         return &amp;bs.values[pos]
                 }</span>
 
                 // we will not be able to find the bar in the future
-                <span class="cov7" title="1009">if bs.values[pos].ts &lt; ts </span><span class="cov4" title="33">{
+                <span class="cov7" title="1015">if bs.values[pos].ts &lt; ts </span><span class="cov4" title="33">{
                         return nil
                 }</span>
-                <span class="cov7" title="976">pos--</span>
+                <span class="cov7" title="982">pos--</span>
         }
 
         <span class="cov2" title="4">return nil</span>
@@ -609,7 +611,7 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
 
                 if err != nil </span><span class="cov0" title="0">{
                         bs.log.Error().Err(err).
-                                Stringer(models.KeyTicker, tp.Ticker).
+                                Stringer(consts.KeyTicker, tp.Ticker).
                                 Int64("ts", ts).
                                 Str("price", tp.Price).
                                 Msg("bar update failed")
@@ -622,7 +624,7 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
 func (bs *bars) startFiller() <span class="cov2" title="4">{
         ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
         go func() </span><span class="cov2" title="4">{
-                bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is started")
+                bs.log.Info().Stringer(consts.KeyTicker, bs.ticker).Msg("filler is started")
                 for </span><span class="cov4" title="37">{
                         select </span>{
                         case &lt;-bs.stopFill:<span class="cov2" title="4"> // can be useful later if will decide to stop filler
@@ -641,7 +643,7 @@ func (bs *bars) startFiller() <span class="cov2" title="4">{
 }
 
 func (bs *bars) stopFiller() <span class="cov2" title="4">{
-        bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is stopped")
+        bs.log.Info().Stringer(consts.KeyTicker, bs.ticker).Msg("filler is stopped")
         bs.stopFill &lt;- struct{}{}
 }</span>
 </pre>

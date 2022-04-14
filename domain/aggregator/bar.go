@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	"github.com/fildenisov/test-task-ticker-price/consts"
 	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
@@ -114,7 +115,7 @@ func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 
 		if err != nil {
 			bs.log.Error().Err(err).
-				Stringer(models.KeyTicker, tp.Ticker).
+				Stringer(consts.KeyTicker, tp.Ticker).
 				Int64("ts", ts).
 				Str("price", tp.Price).
 				Msg("bar update failed")
@@ -127,7 +128,7 @@ func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 func (bs *bars) startFiller() {
 	ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
 	go func() {
-		bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is started")
+		bs.log.Info().Stringer(consts.KeyTicker, bs.ticker).Msg("filler is started")
 		for {
 			select {
 			case <-bs.stopFill: // can be useful later if will decide to stop filler
@@ -146,6 +147,6 @@ func (bs *bars) startFiller() {
 }
 
 func (bs *bars) stopFiller() {
-	bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is stopped")
+	bs.log.Info().Stringer(consts.KeyTicker, bs.ticker).Msg("filler is stopped")
 	bs.stopFill <- struct{}{}
 }
