@@ -7,8 +7,11 @@ http:
   writetimeout: 30s
 aggregator:
   capacity: 1000
-  barinterval: 1s
-fakestream: {
+  barinterval: 60s
+fakestreams: {
   BTC_USD: 100,
   ETH_USD: 20
 }
+fakestreamperiod: 60s
+fakestreamminprice: 100
+fakestreammaxprice: 1000

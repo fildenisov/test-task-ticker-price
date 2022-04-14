@@ -62,7 +62,7 @@ func (f *FakeStream) worker(tp chan models.TickerPrice, errs chan error) {
 		}
 	}()
 
-	t := time.NewTicker(time.Second) // can move to cfg
+	t := time.NewTicker(f.cfg.Period)
 	go func() {
 		for {
 			select {

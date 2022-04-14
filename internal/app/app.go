@@ -51,13 +51,14 @@ func (a *App) Start(ctx context.Context) error {
 	a.cmps = append(a.cmps, cmp{h, "http"}, cmp{agg, "aggregator"})
 
 	// adding fake streams
-	for t, count := range a.cfg.FakeStream {
+	for t, count := range a.cfg.FakeStreams {
 
 		for i := 0; i < count; i++ {
 			fsCfg := stream.Config{
 				Ticker:    t,
-				PriceFrom: 100,
-				PriceTo:   300,
+				PriceFrom: a.cfg.FakeStreamMinPrice,
+				PriceTo:   a.cfg.FakeStreamMaxPrice,
+				Period:    a.cfg.FakeStreamPeriod,
 			}
 			fs := stream.New(fsCfg, agg)
 			a.cmps = append(a.cmps, cmp{fs, fmt.Sprintf("fake_steam_%v", i)})
