@@ -14,16 +14,17 @@ import (
 // Aggregator stores all aggregated values for different tickers.
 // Aggregator is concurrency safe.
 type Aggregator struct {
+	log         *zerolog.Logger
+	tickers     map[models.Ticker]*bars
+	barInverval time.Duration
 	sync.RWMutex
-	log          *zerolog.Logger
-	tickers      map[models.Ticker]*bars
 	capPerTicker int
-	barInverval  time.Duration
 }
 
 // New is an Aggregator constuctor
 func New(cfg Config) *Aggregator {
-	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
+	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().
+		Str("cmp", "http").Logger()
 	return &Aggregator{
 		log:          &l,
 		tickers:      make(map[models.Ticker]*bars),
@@ -32,7 +33,10 @@ func New(cfg Config) *Aggregator {
 	}
 }
 
+// Start starts aggregator component
 func (a *Aggregator) Start(context.Context) error { return nil }
+
+// Stop stops aggregator component
 func (a *Aggregator) Stop(ctx context.Context) error {
 	for _, bs := range a.tickers {
 		bs.stopFiller()
@@ -65,7 +69,7 @@ func (a *Aggregator) GetBars(t models.Ticker, max int) ([]models.Bar, bool) {
 	// search if ticker is known
 	bs, ok := a.tickers[t]
 	if !ok {
-		a.log.Debug().Stringer("ticker", t).Msg("ticker not found")
+		a.log.Debug().Stringer(models.KeyTicker, t).Msg("ticker not found")
 		return []models.Bar{}, false
 	}
 
@@ -105,7 +109,7 @@ func (a *Aggregator) getBars(t models.Ticker) *bars {
 	bs, ok := a.tickers[t]
 
 	if !ok {
-		a.log.Debug().Stringer("ticker", t).Msg("creating ticker bars")
+		a.log.Debug().Stringer(models.KeyTicker, t).Msg("creating ticker bars")
 		bs = newBars(a.log, t, a.capPerTicker, int(a.barInverval.Seconds()))
 		a.tickers[t] = bs
 	}

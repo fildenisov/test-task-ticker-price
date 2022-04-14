@@ -55,23 +55,27 @@
 			<div id="nav">
 				<select id="files">
 				
-				<option value="file0">price_aggregator/cmd/http/main.go (5.0%)</option>
+				<option value="file0">github.com/fildenisov/test-task-ticker-price/cmd/http/main.go (5.0%)</option>
 				
-				<option value="file1">price_aggregator/delivery/http/health.go (0.0%)</option>
+				<option value="file1">github.com/fildenisov/test-task-ticker-price/delivery/http/bars.go (0.0%)</option>
 				
-				<option value="file2">price_aggregator/delivery/http/http.go (0.0%)</option>
+				<option value="file2">github.com/fildenisov/test-task-ticker-price/delivery/http/health.go (0.0%)</option>
 				
-				<option value="file3">price_aggregator/delivery/http/middleware.go (0.0%)</option>
+				<option value="file3">github.com/fildenisov/test-task-ticker-price/delivery/http/http.go (0.0%)</option>
 				
-				<option value="file4">price_aggregator/delivery/http/route.go (0.0%)</option>
+				<option value="file4">github.com/fildenisov/test-task-ticker-price/delivery/http/middleware.go (0.0%)</option>
 				
-				<option value="file5">price_aggregator/delivery/http/utils.go (0.0%)</option>
+				<option value="file5">github.com/fildenisov/test-task-ticker-price/delivery/http/route.go (0.0%)</option>
 				
-				<option value="file6">price_aggregator/domain/aggregator/aggregator.go (100.0%)</option>
+				<option value="file6">github.com/fildenisov/test-task-ticker-price/delivery/http/utils.go (0.0%)</option>
 				
-				<option value="file7">price_aggregator/domain/aggregator/bar.go (98.0%)</option>
+				<option value="file7">github.com/fildenisov/test-task-ticker-price/domain/aggregator/aggregator.go (100.0%)</option>
 				
-				<option value="file8">price_aggregator/internal/app/app.go (0.0%)</option>
+				<option value="file8">github.com/fildenisov/test-task-ticker-price/domain/aggregator/bar.go (96.2%)</option>
+				
+				<option value="file9">github.com/fildenisov/test-task-ticker-price/internal/app/app.go (0.0%)</option>
+				
+				<option value="file10">github.com/fildenisov/test-task-ticker-price/models/stream.go (100.0%)</option>
 				
 				</select>
 			</div>
@@ -107,7 +111,7 @@ import (
         "github.com/rs/zerolog"
         "github.com/rs/zerolog/log"
 
-        "price_aggregator/internal/app"
+        "github.com/fildenisov/test-task-ticker-price/internal/app"
 )
 
 var configPath string
@@ -152,6 +156,50 @@ func main() <span class="cov0" title="0">{
 		<pre class="file" id="file1" style="display: none">package http
 
 import (
+        "net/http"
+        "strconv"
+
+        "github.com/fildenisov/test-task-ticker-price/models"
+        "github.com/gofiber/fiber/v2"
+)
+
+// barResp is a model for bar response
+type barResp struct {
+        Timestamp  int64   `json:"Timestamp"`
+        IndexPrice float64 `json:"IndexPrice"`
+}
+
+// bars is a handler for /v1/tickers/{ticker}/bars/100
+func (s *Server) bars(ctx *fiber.Ctx) error <span class="cov0" title="0">{
+        t := ctx.Params(tickerParam)
+        limitStr := ctx.Params(limitParam)
+
+        limit, err := strconv.ParseInt(limitStr, 10, 64)
+        if err != nil </span><span class="cov0" title="0">{
+                return sendResponse(ctx, "invalid limit", http.StatusBadRequest)
+        }</span>
+
+        <span class="cov0" title="0">bs, ok := s.agg.GetBars(models.Ticker(t), int(limit))
+
+        if !ok </span><span class="cov0" title="0">{
+                return sendResponse(ctx, []barResp{}, http.StatusOK)
+        }</span>
+
+        <span class="cov0" title="0">resp := make([]barResp, 0, len(bs))
+        for _, b := range bs </span><span class="cov0" title="0">{
+                resp = append(resp, barResp{
+                        Timestamp:  b.TS,
+                        IndexPrice: b.Price,
+                })
+        }</span>
+
+        <span class="cov0" title="0">return sendResponse(ctx, resp, http.StatusOK)</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package http
+
+import (
         "time"
 
         "github.com/gofiber/fiber/v2"
@@ -177,7 +225,7 @@ func (s *Server) health(ctx *fiber.Ctx) error <span class="cov0" title="0">{
 }</span>
 </pre>
 		
-		<pre class="file" id="file2" style="display: none">package http
+		<pre class="file" id="file3" style="display: none">package http
 
 import (
         "context"
@@ -188,6 +236,8 @@ import (
         fiber "github.com/gofiber/fiber/v2"
         "github.com/pkg/errors"
         "github.com/rs/zerolog"
+
+        "github.com/fildenisov/test-task-ticker-price/domain/aggregator"
 )
 
 // Server http
@@ -195,10 +245,11 @@ type Server struct {
         log *zerolog.Logger
         cfg Config
         srv *fiber.App
+        agg *aggregator.Aggregator
 }
 
 // New HTTP Server instance constructor
-func New(cfg Config) (*Server, error) <span class="cov0" title="0">{
+func New(cfg Config, agg *aggregator.Aggregator) *Server <span class="cov0" title="0">{
         l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
         srv := fiber.New(fiber.Config{
                 WriteTimeout:             cfg.WriteTimeout,
@@ -210,9 +261,11 @@ func New(cfg Config) (*Server, error) <span class="cov0" title="0">{
                 log: &amp;l,
                 cfg: cfg,
                 srv: srv,
-        }, nil
+                agg: agg,
+        }
 }</span>
 
+// Start starts http server
 func (s *Server) Start(ctx context.Context) error <span class="cov0" title="0">{
         s.setMiddlewares()
         s.setRoutes()
@@ -233,6 +286,7 @@ func (s *Server) Start(ctx context.Context) error <span class="cov0" title="0">{
         }
 }
 
+// Stop stops http server
 func (s *Server) Stop(context.Context) error <span class="cov0" title="0">{
         errCh := make(chan error)
         s.log.Debug().Msgf("start listening %q", s.cfg.Address)
@@ -251,12 +305,12 @@ func (s *Server) Stop(context.Context) error <span class="cov0" title="0">{
 }
 </pre>
 		
-		<pre class="file" id="file3" style="display: none">package http
+		<pre class="file" id="file4" style="display: none">package http
 
 import (
         "github.com/gofiber/fiber/v2"
 
-        "price_aggregator/consts"
+        "github.com/fildenisov/test-task-ticker-price/consts"
 )
 
 func (s *Server) setMiddlewares() <span class="cov0" title="0">{
@@ -281,15 +335,23 @@ func (s *Server) newLoggingMiddleware() func(*fiber.Ctx) (err error) <span class
 }
 </pre>
 		
-		<pre class="file" id="file4" style="display: none">package http
+		<pre class="file" id="file5" style="display: none">package http
+
+import "fmt"
+
+const (
+        tickerParam = "ticker"
+        limitParam  = "limit"
+)
 
 func (s *Server) setRoutes() <span class="cov0" title="0">{
         v1 := s.srv.Group("/v1")
         v1.Get("/health", s.health)
+        v1.Get(fmt.Sprintf("/tickers/:%s/bars/:%s", tickerParam, limitParam), s.bars)
 }</span>
 </pre>
 		
-		<pre class="file" id="file5" style="display: none">package http
+		<pre class="file" id="file6" style="display: none">package http
 
 import (
         "github.com/gofiber/fiber/v2"
@@ -311,34 +373,44 @@ func sendResponse(ctx *fiber.Ctx, resp interface{}, statusCode int) error <span 
 }
 </pre>
 		
-		<pre class="file" id="file6" style="display: none">package aggregator
+		<pre class="file" id="file7" style="display: none">package aggregator
 
 import (
         "context"
-        "price_aggregator/models"
+        "os"
         "sync"
         "time"
+
+        "github.com/rs/zerolog"
+
+        "github.com/fildenisov/test-task-ticker-price/models"
 )
 
 // Aggregator stores all aggregated values for different tickers.
 // Aggregator is concurrency safe.
 type Aggregator struct {
         sync.RWMutex
+        log          *zerolog.Logger
         tickers      map[models.Ticker]*bars
         capPerTicker int
         barInverval  time.Duration
 }
 
 // New is an Aggregator constuctor
-func New(ctx context.Context, cfg Config) *Aggregator <span class="cov1" title="1">{
+func New(cfg Config) *Aggregator <span class="cov1" title="1">{
+        l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
         return &amp;Aggregator{
+                log:          &amp;l,
                 tickers:      make(map[models.Ticker]*bars),
                 barInverval:  cfg.BarInterval,
                 capPerTicker: cfg.Capacity,
         }
 }</span>
 
+// Start starts aggregator component
 func (a *Aggregator) Start(context.Context) error <span class="cov1" title="1">{ return nil }</span>
+
+// Stop stops aggregator component
 func (a *Aggregator) Stop(ctx context.Context) error <span class="cov1" title="1">{
         for _, bs := range a.tickers </span><span class="cov1" title="1">{
                 bs.stopFiller()
@@ -347,8 +419,19 @@ func (a *Aggregator) Stop(ctx context.Context) error <span class="cov1" title="1
         <span class="cov1" title="1">return nil</span>
 }
 
+// SubscribePriceStream subscribes aggregator to a new price source
+func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) <span class="cov3" title="2">{
+        prices := make(chan models.TickerPrice)
+        errs := make(chan error)
+        bs := a.getBars(t)
+
+        go bs.updater(prices, errs)
+
+        return prices, errs
+}</span>
+
 // GetBars return last 'max' known bars
-func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool) <span class="cov4" title="3">{
+func (a *Aggregator) GetBars(t models.Ticker, max int) ([]models.Bar, bool) <span class="cov4" title="3">{
         if max &lt;= 0 </span><span class="cov1" title="1">{
                 return []models.Bar{}, false
         }</span>
@@ -358,8 +441,9 @@ func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool)
         defer a.RUnlock()
 
         // search if ticker is known
-        bs, ok := a.tickers[ticker]
+        bs, ok := a.tickers[t]
         if !ok </span><span class="cov1" title="1">{
+                a.log.Debug().Stringer("ticker", t).Msg("ticker not found")
                 return []models.Bar{}, false
         }</span>
 
@@ -394,40 +478,29 @@ func (a *Aggregator) GetBars(ticker models.Ticker, max int) ([]models.Bar, bool)
 
 // getBars gets or created ticker bars
 func (a *Aggregator) getBars(t models.Ticker) *bars <span class="cov3" title="2">{
-        a.RLock()
+        a.Lock()
+        defer a.Unlock()
         bs, ok := a.tickers[t]
-        a.RUnlock()
 
         if !ok </span><span class="cov1" title="1">{
-                a.Lock()
-
-                bs = newBars(a.capPerTicker, int(a.barInverval.Seconds()))
+                a.log.Debug().Stringer("ticker", t).Msg("creating ticker bars")
+                bs = newBars(a.log, t, a.capPerTicker, int(a.barInverval.Seconds()))
                 a.tickers[t] = bs
-
-                a.Unlock()
         }</span>
         <span class="cov3" title="2">return bs</span>
 }
-
-// SubscribePriceStream subscribes aggregator to a new price source
-func (a *Aggregator) SubscribePriceStream(t models.Ticker) (chan models.TickerPrice, chan error) <span class="cov3" title="2">{
-        prices := make(chan models.TickerPrice)
-        errs := make(chan error)
-        bs := a.getBars(t)
-
-        go bs.updater(prices, errs)
-
-        return prices, errs
-}</span>
 </pre>
 		
-		<pre class="file" id="file7" style="display: none">package aggregator
+		<pre class="file" id="file8" style="display: none">package aggregator
 
 import (
-        "price_aggregator/models"
         "strconv"
         "sync"
         "time"
+
+        "github.com/rs/zerolog"
+
+        "github.com/fildenisov/test-task-ticker-price/models"
 )
 
 // bar stores agregated index value per time interval.
@@ -454,6 +527,8 @@ func (b *bar) update(tp string, intervalSec int) error <span class="cov9" title=
 // It provides concurrently safe add() method that cicles the queue if necessory.
 type bars struct {
         sync.Mutex
+        log         *zerolog.Logger
+        ticker      models.Ticker
         values      []bar         // circular queue for all aggregated bars
         stopFill    chan struct{} // send anything to stop filler
         pos         int           // stores current index for next write
@@ -461,8 +536,10 @@ type bars struct {
         intervalSec int           // stores interval duration in seconds
 }
 
-func newBars(cap, intervalSec int) *bars <span class="cov2" title="4">{
+func newBars(log *zerolog.Logger, t models.Ticker, cap, intervalSec int) *bars <span class="cov2" title="4">{
         bs := &amp;bars{
+                log:         log,
+                ticker:      t,
                 values:      make([]bar, cap),
                 intervalSec: intervalSec,
                 stopFill:    make(chan struct{}),
@@ -473,46 +550,46 @@ func newBars(cap, intervalSec int) *bars <span class="cov2" title="4">{
 }</span>
 
 // add adds new empty bar into the queue.
-func (bs *bars) add(ts int64) *bar <span class="cov4" title="38">{
+func (bs *bars) add(ts int64) *bar <span class="cov4" title="36">{
         bs.values[bs.pos] = bar{
                 ts: ts,
         }
 
         if bs.pos == len(bs.values)-1 </span><span class="cov1" title="2">{
                 bs.pos = 0
-        }</span> else<span class="cov4" title="36"> {
+        }</span> else<span class="cov4" title="34"> {
                 bs.pos++
         }</span>
 
-        <span class="cov4" title="38">if bs.count != len(bs.values) </span><span class="cov4" title="36">{
+        <span class="cov4" title="36">if bs.count != len(bs.values) </span><span class="cov4" title="35">{
                 bs.count++
         }</span>
 
-        <span class="cov4" title="38">return &amp;bs.values[bs.pos]</span>
+        <span class="cov4" title="36">return &amp;bs.values[bs.pos]</span>
 }
 
 // get finds and return the bar, ts MUST be correct interval
 func (bs *bars) get(ts int64) *bar <span class="cov9" title="8033">{
         // get index of the newest bar
         pos := bs.pos - 1
-        for i := 0; i &lt; bs.count; i++ </span><span class="cov10" title="9013">{
-                if pos &lt; 0 </span><span class="cov6" title="395">{
+        for i := 0; i &lt; bs.count; i++ </span><span class="cov10" title="9019">{
+                if pos &lt; 0 </span><span class="cov6" title="221">{
                         pos = bs.count - 1
                 }</span>
 
                 // if ts matched = we've found the bar
-                <span class="cov10" title="9013">if bs.values[pos].ts == ts </span><span class="cov9" title="7995">{
+                <span class="cov10" title="9019">if bs.values[pos].ts == ts </span><span class="cov9" title="7997">{
                         return &amp;bs.values[pos]
                 }</span>
 
                 // we will not be able to find the bar in the future
-                <span class="cov7" title="1018">if bs.values[pos].ts &lt; ts </span><span class="cov4" title="33">{
+                <span class="cov7" title="1022">if bs.values[pos].ts &lt; ts </span><span class="cov4" title="32">{
                         return nil
                 }</span>
-                <span class="cov7" title="985">pos--</span>
+                <span class="cov7" title="990">pos--</span>
         }
 
-        <span class="cov2" title="5">return nil</span>
+        <span class="cov2" title="4">return nil</span>
 }
 
 func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- error) <span class="cov2" title="4">{
@@ -521,7 +598,7 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
                 ts = ts - ts%int64(bs.intervalSec)
                 bs.Lock()
                 b := bs.get(ts)
-                if b == nil </span><span class="cov4" title="24">{
+                if b == nil </span><span class="cov4" title="21">{
                         b = bs.add(ts)
                 }</span>
 
@@ -529,6 +606,11 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
                 bs.Unlock()
 
                 if err != nil </span><span class="cov0" title="0">{
+                        bs.log.Error().Err(err).
+                                Stringer("ticker", tp.Ticker).
+                                Int64("ts", ts).
+                                Str("price", tp.Price).
+                                Msg("bar update failed")
                         errs &lt;- err
                 }</span>
         }
@@ -538,6 +620,7 @@ func (bs *bars) updater(prices &lt;-chan models.TickerPrice, errs chan&lt;- erro
 func (bs *bars) startFiller() <span class="cov2" title="4">{
         ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
         go func() </span><span class="cov2" title="4">{
+                bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is started")
                 for </span><span class="cov4" title="37">{
                         select </span>{
                         case &lt;-bs.stopFill:<span class="cov2" title="4"> // can be useful later if will decide to stop filler
@@ -547,7 +630,7 @@ func (bs *bars) startFiller() <span class="cov2" title="4">{
                                 ts = ts - ts%int64(bs.intervalSec)
                                 bs.Lock()
                                 b := bs.get(ts)
-                                if b == nil </span><span class="cov3" title="14">{
+                                if b == nil </span><span class="cov3" title="15">{
                                         b = bs.add(ts)
                                 }</span>
                                 <span class="cov4" title="33">bs.Unlock()</span>
@@ -557,59 +640,77 @@ func (bs *bars) startFiller() <span class="cov2" title="4">{
 }
 
 func (bs *bars) stopFiller() <span class="cov2" title="4">{
+        bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is stopped")
         bs.stopFill &lt;- struct{}{}
 }</span>
 </pre>
 		
-		<pre class="file" id="file8" style="display: none">package app
+		<pre class="file" id="file9" style="display: none">package app
 
 import (
         "context"
+        "fmt"
         "os"
 
         "github.com/pkg/errors"
         "github.com/rs/zerolog"
         "golang.org/x/sync/errgroup"
 
-        "price_aggregator/consts"
-        "price_aggregator/delivery/http"
-        "price_aggregator/internal/rep"
+        "github.com/fildenisov/test-task-ticker-price/consts"
+        "github.com/fildenisov/test-task-ticker-price/delivery/http"
+        "github.com/fildenisov/test-task-ticker-price/domain/aggregator"
+        "github.com/fildenisov/test-task-ticker-price/internal/rep"
+        "github.com/fildenisov/test-task-ticker-price/mocks/stream"
+        "github.com/fildenisov/test-task-ticker-price/models"
 )
 
-var (
-        ErrStartTimeout    = errors.New("start timeout")
-        ErrShutdownTimeout = errors.New("shutdown timeout")
-)
-
-type Cmp struct {
+type cmp struct {
         Name    string
         Service rep.Lifecycle
 }
 
+// App respesents the application.
+// Import App only in cmd derectory.
 type App struct {
         log  *zerolog.Logger
         cfg  Config
-        cmps []Cmp
+        cmps []cmp
 }
 
+// New is a constructor for App
 func New(cfg Config) *App <span class="cov0" title="0">{
         l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "app").Logger()
         return &amp;App{
                 log:  &amp;l,
                 cfg:  cfg,
-                cmps: []Cmp{},
+                cmps: []cmp{},
         }
 }</span>
+
+// Start starts application
 func (a *App) Start(ctx context.Context) error <span class="cov0" title="0">{
         a.log.Info().Msg("starting application")
 
-        h, err := http.New(a.cfg.HTTP)
-        if err != nil </span><span class="cov0" title="0">{
-                a.log.Fatal().Err(err).Msg("cannot create http")
-        }</span>
-        <span class="cov0" title="0">a.cmps = append(a.cmps, Cmp{"http", h})
+        agg := aggregator.New(a.cfg.Aggregator)
+        h := http.New(a.cfg.HTTP, agg)
 
-        okCh, errCh := make(chan struct{}), make(chan error)
+        a.cmps = append(a.cmps, cmp{"http", h}, cmp{"aggregator", agg})
+
+        // adding fake streams
+        for t, count := range a.cfg.FakeStream </span><span class="cov0" title="0">{
+
+                for i := 0; i &lt; count; i++ </span><span class="cov0" title="0">{
+                        fsCfg := stream.Config{
+                                Ticker:    t,
+                                PriceFrom: 100,
+                                PriceTo:   300,
+                        }
+                        fs := stream.New(fsCfg, agg)
+                        a.cmps = append(a.cmps, cmp{fmt.Sprintf("fake_steam_%v", i), fs})
+                }</span>
+        }
+
+        <span class="cov0" title="0">okCh, errCh := make(chan struct{}), make(chan error)
         go func() </span><span class="cov0" title="0">{
                 for _, cmp := range a.cmps </span><span class="cov0" title="0">{
                         a.log.Info().Msgf("%v is starting", cmp.Name)
@@ -624,7 +725,7 @@ func (a *App) Start(ctx context.Context) error <span class="cov0" title="0">{
 
         <span class="cov0" title="0">select </span>{
         case &lt;-ctx.Done():<span class="cov0" title="0">
-                return ErrStartTimeout</span>
+                return models.ErrStartTimeout</span>
         case err := &lt;-errCh:<span class="cov0" title="0">
                 return err</span>
         case &lt;-okCh:<span class="cov0" title="0">
@@ -632,6 +733,7 @@ func (a *App) Start(ctx context.Context) error <span class="cov0" title="0">{
         }
 }
 
+// Stop stops application
 func (a *App) Stop(ctx context.Context) error <span class="cov0" title="0">{
         a.log.Info().Msg("shutting down service...")
 
@@ -649,13 +751,35 @@ func (a *App) Stop(ctx context.Context) error <span class="cov0" title="0">{
 
         <span class="cov0" title="0">select </span>{
         case &lt;-ctx.Done():<span class="cov0" title="0">
-                return ErrShutdownTimeout</span>
+                return models.ErrShutdownTimeout</span>
         case err := &lt;-errCh:<span class="cov0" title="0">
                 if err != nil </span><span class="cov0" title="0">{
                         return err
                 }</span>
                 <span class="cov0" title="0">return nil</span>
         }
+}
+</pre>
+		
+		<pre class="file" id="file10" style="display: none">package models
+
+import "time"
+
+const (
+        // BTCUSDTicker is a ticker for BTC-USD pair
+        BTCUSDTicker Ticker = "BTC_USD"
+)
+
+// Ticker represents a pair of two currencies
+type Ticker string
+
+func (t Ticker) String() string <span class="cov10" title="4">{ return string(t) }</span>
+
+// TickerPrice is an incomming ticker price from an exchange
+type TickerPrice struct {
+        Ticker Ticker
+        Time   time.Time
+        Price  string // decimal value. example: "0", "10", "12.2", "13.2345122"
 }
 </pre>
 		

@@ -1,5 +1,3 @@
-SERVICE_NAME		:= price_aggregator
-
 .PHONY: mod
 mod:
 	go mod tidy
@@ -11,15 +9,9 @@ build:
 			-o bin/app \
 			cmd/http/main.go
 
-
 .PHONY: check
 check:
 	golangci-lint run -v --config .golangci.yml
-
-.PHONY: lint
-lint:
-	golangci-lint run -v --config .golangci.yml
-
 
 .PHONY: test
 test:
@@ -36,8 +28,4 @@ cover:
 .PHONY: run
 run: build
 	./bin/app --config=configs/local/config.yaml
-
-.PHONY: generate
-generate:
-	@go generate ./...
 

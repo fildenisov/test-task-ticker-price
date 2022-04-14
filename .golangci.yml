@@ -112,6 +112,9 @@ linters-settings:
     # Ignore when constant is not used as function argument.
     # Default: true
     ignore-calls: false
+  govet:
+    enable:
+      - fieldalignment
 
 # List of enabled linters.
 linters:
@@ -128,9 +131,7 @@ linters:
     - gosec
     - govet
     - ineffassign
-    - interfacer
     - lll
-    - maligned
     - misspell
     - nakedret
     - staticcheck

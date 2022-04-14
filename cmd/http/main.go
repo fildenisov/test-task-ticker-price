@@ -33,7 +33,7 @@ func main() {
 	startCtx, startCancel := context.WithTimeout(context.Background(), cfg.StartTimeout)
 	defer startCancel()
 	if err := application.Start(startCtx); err != nil {
-		log.Fatal().Err(err).Msg("cannot start application")
+		log.Fatal().Err(err).Msg("cannot start application") // nolint
 	}
 
 	log.Info().Msg("application started")

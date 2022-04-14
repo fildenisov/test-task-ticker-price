@@ -16,14 +16,15 @@ import (
 // Server http
 type Server struct {
 	log *zerolog.Logger
-	cfg Config
 	srv *fiber.App
 	agg *aggregator.Aggregator
+	cfg Config
 }
 
 // New HTTP Server instance constructor
 func New(cfg Config, agg *aggregator.Aggregator) *Server {
-	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "http").Logger()
+	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().
+		Str("cmp", "http").Logger()
 	srv := fiber.New(fiber.Config{
 		WriteTimeout:             cfg.WriteTimeout,
 		ReadTimeout:              cfg.ReadTimeout,
@@ -62,7 +63,7 @@ func (s *Server) Start(ctx context.Context) error {
 // Stop stops http server
 func (s *Server) Stop(context.Context) error {
 	errCh := make(chan error)
-	s.log.Debug().Msgf("start listening %q", s.cfg.Address)
+	s.log.Debug().Msgf("stopping %q", s.cfg.Address)
 	go func() {
 		if err := s.srv.Shutdown(); err != nil {
 			errCh <- errors.Wrap(err, "cannot shutdown")

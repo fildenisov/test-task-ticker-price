@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
@@ -12,12 +13,13 @@ import (
 	"github.com/fildenisov/test-task-ticker-price/delivery/http"
 	"github.com/fildenisov/test-task-ticker-price/domain/aggregator"
 	"github.com/fildenisov/test-task-ticker-price/internal/rep"
+	"github.com/fildenisov/test-task-ticker-price/mocks/stream"
 	"github.com/fildenisov/test-task-ticker-price/models"
 )
 
 type cmp struct {
-	Name    string
 	Service rep.Lifecycle
+	Name    string
 }
 
 // App respesents the application.
@@ -30,7 +32,8 @@ type App struct {
 
 // New is a constructor for App
 func New(cfg Config) *App {
-	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().Str("cmp", "app").Logger()
+	l := zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr}).With().Timestamp().
+		Str("cmp", "app").Logger()
 	return &App{
 		log:  &l,
 		cfg:  cfg,
@@ -45,7 +48,21 @@ func (a *App) Start(ctx context.Context) error {
 	agg := aggregator.New(a.cfg.Aggregator)
 	h := http.New(a.cfg.HTTP, agg)
 
-	a.cmps = append(a.cmps, cmp{"http", h}, cmp{"aggregator", agg})
+	a.cmps = append(a.cmps, cmp{h, "http"}, cmp{agg, "aggregator"})
+
+	// adding fake streams
+	for t, count := range a.cfg.FakeStream {
+
+		for i := 0; i < count; i++ {
+			fsCfg := stream.Config{
+				Ticker:    t,
+				PriceFrom: 100,
+				PriceTo:   300,
+			}
+			fs := stream.New(fsCfg, agg)
+			a.cmps = append(a.cmps, cmp{fs, fmt.Sprintf("fake_steam_%v", i)})
+		}
+	}
 
 	okCh, errCh := make(chan struct{}), make(chan error)
 	go func() {

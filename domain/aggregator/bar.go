@@ -17,7 +17,7 @@ type bar struct {
 	count int     // incidates how many indexes were agregated in val
 }
 
-func (b *bar) update(tp string, intervalSec int) error {
+func (b *bar) update(tp string) error {
 	val, err := strconv.ParseFloat(tp, 64)
 	if err != nil {
 		return err
@@ -33,14 +33,14 @@ func (b *bar) update(tp string, intervalSec int) error {
 // bars stores circular queue of []bar.
 // It provides concurrently safe add() method that cicles the queue if necessory.
 type bars struct {
-	sync.Mutex
-	log         *zerolog.Logger
-	ticker      models.Ticker
-	values      []bar         // circular queue for all aggregated bars
 	stopFill    chan struct{} // send anything to stop filler
-	pos         int           // stores current index for next write
-	count       int           // stores total for all filled bars. max(count) = len(values)
-	intervalSec int           // stores interval duration in seconds
+	values      []bar         // circular queue for all aggregated bars
+	ticker      models.Ticker
+	log         *zerolog.Logger
+	pos         int // stores current index for next write
+	count       int // stores total for all filled bars. max(count) = len(values)
+	intervalSec int // stores interval duration in seconds
+	sync.Mutex
 }
 
 func newBars(log *zerolog.Logger, t models.Ticker, cap, intervalSec int) *bars {
@@ -102,19 +102,19 @@ func (bs *bars) get(ts int64) *bar {
 func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 	for tp := range prices {
 		ts := tp.Time.Unix()
-		ts = ts - ts%int64(bs.intervalSec)
+		ts -= ts % int64(bs.intervalSec)
 		bs.Lock()
 		b := bs.get(ts)
 		if b == nil {
 			b = bs.add(ts)
 		}
 
-		err := b.update(tp.Price, bs.intervalSec)
+		err := b.update(tp.Price)
 		bs.Unlock()
 
 		if err != nil {
 			bs.log.Error().Err(err).
-				Stringer("ticker", tp.Ticker).
+				Stringer(models.KeyTicker, tp.Ticker).
 				Int64("ts", ts).
 				Str("price", tp.Price).
 				Msg("bar update failed")
@@ -127,18 +127,17 @@ func (bs *bars) updater(prices <-chan models.TickerPrice, errs chan<- error) {
 func (bs *bars) startFiller() {
 	ticker := time.NewTicker(time.Duration(bs.intervalSec) * time.Second)
 	go func() {
-		bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is started")
+		bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is started")
 		for {
 			select {
 			case <-bs.stopFill: // can be useful later if will decide to stop filler
 				return
 			case t := <-ticker.C:
 				ts := t.Unix()
-				ts = ts - ts%int64(bs.intervalSec)
+				ts -= ts % int64(bs.intervalSec)
 				bs.Lock()
-				b := bs.get(ts)
-				if b == nil {
-					b = bs.add(ts)
+				if b := bs.get(ts); b == nil {
+					bs.add(ts)
 				}
 				bs.Unlock()
 			}
@@ -147,6 +146,6 @@ func (bs *bars) startFiller() {
 }
 
 func (bs *bars) stopFiller() {
-	bs.log.Info().Stringer("ticker", bs.ticker).Msg("filler is stopped")
+	bs.log.Info().Stringer(models.KeyTicker, bs.ticker).Msg("filler is stopped")
 	bs.stopFill <- struct{}{}
 }

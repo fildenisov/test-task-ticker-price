@@ -8,4 +8,7 @@ http:
 aggregator:
   capacity: 1000
   barinterval: 1s
-
+fakestream: {
+  BTC_USD: 100,
+  ETH_USD: 20
+}

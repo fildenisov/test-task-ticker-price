@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	HTTP         http.Config
-	Aggregator   aggregator.Config
+	FakeStream   map[string]int
 	StartTimeout time.Duration
 	StopTimeout  time.Duration
+	HTTP         http.Config
+	Aggregator   aggregator.Config
 }
