@@ -61,7 +61,7 @@ func (a *App) Start(ctx context.Context) error {
 				Period:    a.cfg.FakeStreamPeriod,
 			}
 			fs := stream.New(fsCfg, agg)
-			a.cmps = append(a.cmps, cmp{fs, fmt.Sprintf("fake_steam_%v", i)})
+			a.cmps = append(a.cmps, cmp{fs, fmt.Sprintf("fake_steam_%v_%v", t, i)})
 		}
 	}
 
