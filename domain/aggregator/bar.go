@@ -34,12 +34,12 @@ func (b *bar) update(tp string) error {
 // It provides concurrently safe add() method that cicles the queue if necessory.
 type bars struct {
 	log         *zerolog.Logger
-	stopFill    chan struct{} // send anything to stop filler
-	values      []bar         // circular queue for all aggregated bars
+	stopFill    chan struct{}
 	ticker      models.Ticker
-	pos         int // stores current index for next write
-	count       int // stores total for all filled bars. max(count) = len(values)
-	intervalSec int // stores interval duration in seconds
+	values      []bar
+	pos         int
+	count       int
+	intervalSec int
 	sync.Mutex
 }
 

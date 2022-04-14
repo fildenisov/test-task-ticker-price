@@ -15,12 +15,12 @@ func TestBarUpdate(t *testing.T) {
 
 	b := bar{}
 
-	if err := b.update("WRONG_VALUE", 10); err == nil {
+	if err := b.update("WRONG_VALUE"); err == nil {
 		t.Error("expected to have an error, got nil")
 	}
 
 	b = bar{val: 10, count: 10}
-	if err := b.update("50.0", 10); err != nil {
+	if err := b.update("50.0"); err != nil {
 		t.Errorf("got err: %v \n", err)
 	}
 

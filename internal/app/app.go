@@ -26,8 +26,8 @@ type cmp struct {
 // Import App only in cmd derectory.
 type App struct {
 	log  *zerolog.Logger
-	cfg  Config
 	cmps []cmp
+	cfg  Config
 }
 
 // New is a constructor for App

@@ -16,8 +16,8 @@ import (
 type FakeStream struct {
 	log  *zerolog.Logger
 	agg  *aggregator.Aggregator
-	cfg  Config
 	done chan bool
+	cfg  Config
 }
 
 // New is an FakeStream constuctor
