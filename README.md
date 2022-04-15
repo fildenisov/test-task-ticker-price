@@ -32,7 +32,7 @@ Use `make check` to run linter.
 
 ## Project layout
 
-Application consists of several component:
+Application consists of several components:
 - internal/app - an instance of an application
 - internal/rep - interface repository to separate application components
 - delivery/http - a web server that allows user to get aggregated index information
@@ -56,13 +56,13 @@ bar has only 1 method - update. It takes index price string (based on the task r
 Aggregated index price is calculated as an average price = sum of all passed prices / total count of all passed prices.
 
 #### bars
-Stores a circular slice of `[]bar`, which means that if we reach the capacity limit (sets in config) next `bar` will be added to `bars[0]`. 
+Stores a circular slice of `[]bar`, which means that if the capacity limit is reached (sets in config) next `bar` will be added to `bars[0]`. 
 
 All stored bars are assosiated with exact `Ticker` (e.g. BTC_USD).
 
 `bars` methods are goroutine safe which is proved by `make race`. 
 
-`bars` stores a `bar` for **every** interval which means that if no value was passed in current interval it will be filled will an empty `bar` (count=0, val=0) value automaticaly. That guaranties that if value will be streamed with a delay `bars` will have a `bar` to update.
+`bars` stores a `bar` for **every** interval which means that if no value was passed in current interval it will be filled will an empty `bar` (count=0, val=0) value automaticaly. That guarantees that if value will be streamed with a delay `bars` will have a `bar` to update.
 
 #### Aggregator
 Stores mapping between `Ticker` and `bars`.
